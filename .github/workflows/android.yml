@@ -31,18 +31,23 @@ jobs:
         run: |
           sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Generate debug keystore
+      - name: Decode Keystore
         run: |
-          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
 
-      - name: Build debug APK
+      - name: Build Release Bundle
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew bundleRelease --stacktrace
+        env:
+          KEYSTORE_PATH: "release.keystore"
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Upload debug APK
+      - name: Upload Release AAB
         uses: actions/upload-artifact@v4
         with:
-          name: English5000-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: English5000-release-aab
+          path: app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
